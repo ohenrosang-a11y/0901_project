@@ -1,19 +1,17 @@
 /**
  * 기록의 온도 - Google Sheets 인증 API
  *
- * 1. Apps Script에 이 파일을 붙여 넣습니다.
- * 2. setupAuth()를 한 번 직접 실행하고 권한을 승인합니다.
- * 3. 웹 앱으로 배포합니다.
- *
- * 주의: 소규모 학습용 구현입니다. 상용 서비스는 Firebase Auth,
- * Google Identity Platform 등 전문 인증 서비스를 사용하세요.
+ * 1. Apps Script 편집기(Extensions > Apps Script)에 이 내용을 붙여넣습니다.
+ * 2. setupAuth()를 한 번 실행하고 권한을 승인합니다.
+ * 3. [배포] > [배포 관리] > 연필 아이콘 클릭 > [새 버전] 선택 후 [배포]를 누릅니다.
  */
 
 const AUTH_CONFIG = Object.freeze({
   spreadsheetId: '1RhBPPLH-jYe6w63h_ud5S8gcT9-GEKI9eDSfkvgTvp8',
   usersSheet: 'Users',
   sessionsSheet: 'Sessions',
-  hashIterations: 12000,
+  hashIterations: 600, // 초고속 응답을 위한 최적화 해시 반복 횟수
+  legacyHashIterations: 12000, // 기존 가입 계정 호환성 보장
   sessionHours: 24,
   maxLoginAttempts: 5,
   loginBlockSeconds: 15 * 60,
@@ -37,6 +35,10 @@ const SESSION_HEADERS = [
   'expiresAt',
   'createdAt',
 ];
+
+// 실행 컨텍스트 메모리 캐시 (불필요한 중복 API 호출 방지)
+let cachedSpreadsheet_ = null;
+let cachedPepper_ = null;
 
 function setupAuth() {
   ensureAuthSetup_();
@@ -119,7 +121,7 @@ function signup_(payload) {
     }
 
     const salt = createRandomToken_();
-    const passwordHash = hashPassword_(password, salt);
+    const passwordHash = hashPassword_(password, salt, AUTH_CONFIG.hashIterations);
     const now = new Date();
     const userId = Utilities.getUuid();
 
@@ -178,13 +180,36 @@ function login_(payload) {
       return normalizeEmail_(item.email) === email;
     });
 
-    const valid =
-      user &&
-      user.status === 'ACTIVE' &&
-      constantTimeEqual_(
-        hashPassword_(password, String(user.passwordSalt)),
-        String(user.passwordHash)
-      );
+    if (!user || user.status !== 'ACTIVE') {
+      recordFailedLogin_(email);
+      return json_({
+        ok: false,
+        code: 'INVALID_CREDENTIALS',
+        message: '이메일 또는 비밀번호가 올바르지 않습니다.',
+      });
+    }
+
+    const salt = String(user.passwordSalt);
+    const storedHash = String(user.passwordHash);
+
+    // 1. 고속 해시 검증 (AUTH_CONFIG.hashIterations)
+    let valid = constantTimeEqual_(hashPassword_(password, salt, AUTH_CONFIG.hashIterations), storedHash);
+
+    // 2. 기존 레거시 계정(12000 iterations) 호환성 검증 및 자동 업그레이드
+    if (!valid && AUTH_CONFIG.legacyHashIterations) {
+      const legacyHash = hashPassword_(password, salt, AUTH_CONFIG.legacyHashIterations);
+      if (constantTimeEqual_(legacyHash, storedHash)) {
+        valid = true;
+        // 다음 로그인부터 지연 없이 처리되도록 고속 해시로 자동 업데이트
+        try {
+          const newFastHash = hashPassword_(password, salt, AUTH_CONFIG.hashIterations);
+          const hashCol = USER_HEADERS.indexOf('passwordHash') + 1;
+          usersSheet.getRange(user.__rowNumber, hashCol).setValue(newFastHash);
+        } catch (migErr) {
+          console.warn('Hash upgrade notice:', migErr);
+        }
+      }
+    }
 
     if (!valid) {
       recordFailedLogin_(email);
@@ -196,7 +221,11 @@ function login_(payload) {
     }
 
     clearFailedLogins_(email);
-    deleteExpiredSessions_();
+
+    // 주기적 세션 정리 (로그인 5회당 1회 배치 처리)
+    if (Math.random() < 0.2) {
+      deleteExpiredSessions_();
+    }
 
     const token = createRandomToken_() + createRandomToken_();
     const tokenHash = sha256_(token);
@@ -214,13 +243,20 @@ function login_(payload) {
 
     updateUserLastLogin_(usersSheet, user.__rowNumber, now);
 
+    const pubUser = publicUser_(user);
+
+    // ScriptCache에 세션 캐싱 (10분간 DB 조회 없이 초고속 me 응답)
+    try {
+      CacheService.getScriptCache().put('user_sess:' + tokenHash, JSON.stringify(pubUser), 600);
+    } catch (cErr) {}
+
     return json_({
       ok: true,
       message: '로그인되었습니다.',
       data: {
         token: token,
         expiresAt: expiresAt.toISOString(),
-        user: publicUser_(user),
+        user: pubUser,
       },
     });
   } finally {
@@ -237,8 +273,14 @@ function logout_(token) {
   lock.waitLock(10000);
 
   try {
-    const sheet = getSheet_(AUTH_CONFIG.sessionsSheet);
     const tokenHash = sha256_(token);
+
+    // 캐시 즉시 무효화
+    try {
+      CacheService.getScriptCache().remove('user_sess:' + tokenHash);
+    } catch (cErr) {}
+
+    const sheet = getSheet_(AUTH_CONFIG.sessionsSheet);
     const sessions = getObjects_(sheet);
     const session = sessions.find(function (item) {
       return constantTimeEqual_(String(item.tokenHash), tokenHash);
@@ -259,8 +301,19 @@ function getCurrentUser_(token) {
     return json_({ ok: false, code: 'UNAUTHORIZED', message: '로그인이 필요합니다.' });
   }
 
-  const sessions = getObjects_(getSheet_(AUTH_CONFIG.sessionsSheet));
   const tokenHash = sha256_(token);
+
+  // 1. ScriptCache 캐시 우선 확인 (0초대 초고속 응답)
+  try {
+    const cached = CacheService.getScriptCache().get('user_sess:' + tokenHash);
+    if (cached) {
+      const user = JSON.parse(cached);
+      return json_({ ok: true, data: { user: user } });
+    }
+  } catch (cErr) {}
+
+  // 2. DB 조회 (캐시 미스 시)
+  const sessions = getObjects_(getSheet_(AUTH_CONFIG.sessionsSheet));
   const session = sessions.find(function (item) {
     return (
       constantTimeEqual_(String(item.tokenHash), tokenHash) &&
@@ -280,7 +333,14 @@ function getCurrentUser_(token) {
     return json_({ ok: false, code: 'UNAUTHORIZED', message: '사용자 정보를 찾을 수 없습니다.' });
   }
 
-  return json_({ ok: true, data: { user: publicUser_(user) } });
+  const pubUser = publicUser_(user);
+
+  // 캐시 재등록
+  try {
+    CacheService.getScriptCache().put('user_sess:' + tokenHash, JSON.stringify(pubUser), 600);
+  } catch (cErr) {}
+
+  return json_({ ok: true, data: { user: pubUser } });
 }
 
 function validateSignup_(email, name, nickname, password) {
@@ -297,17 +357,13 @@ function validateSignup_(email, name, nickname, password) {
   }
 }
 
-function hashPassword_(password, salt) {
-  const pepper =
-    PropertiesService.getScriptProperties().getProperty('PASSWORD_PEPPER');
-
-  if (!pepper) {
-    throw new Error('setupAuth()를 먼저 실행해 주세요.');
-  }
+function hashPassword_(password, salt, iterations) {
+  const pepper = getPepper_();
+  const iterCount = iterations || AUTH_CONFIG.hashIterations;
 
   let value = salt + String(password) + pepper;
 
-  for (let i = 0; i < AUTH_CONFIG.hashIterations; i += 1) {
+  for (let i = 0; i < iterCount; i += 1) {
     value = sha256_(value + salt + pepper);
   }
 
@@ -321,12 +377,12 @@ function sha256_(value) {
     Utilities.Charset.UTF_8
   );
 
-  return bytes
-    .map(function (byte) {
-      const normalized = byte < 0 ? byte + 256 : byte;
-      return ('0' + normalized.toString(16)).slice(-2);
-    })
-    .join('');
+  let hex = '';
+  for (let i = 0; i < bytes.length; i += 1) {
+    const b = bytes[i] < 0 ? bytes[i] + 256 : bytes[i];
+    hex += (b < 16 ? '0' : '') + b.toString(16);
+  }
+  return hex;
 }
 
 function constantTimeEqual_(left, right) {
@@ -360,18 +416,36 @@ function updateUserLastLogin_(sheet, rowNumber, date) {
 }
 
 function deleteExpiredSessions_() {
-  const sheet = getSheet_(AUTH_CONFIG.sessionsSheet);
-  const sessions = getObjects_(sheet);
-  const expiredRows = sessions
-    .filter(function (session) {
-      return new Date(session.expiresAt).getTime() <= Date.now();
-    })
-    .map(function (session) { return session.__rowNumber; })
-    .sort(function (a, b) { return b - a; });
+  try {
+    const sheet = getSheet_(AUTH_CONFIG.sessionsSheet);
+    const values = sheet.getDataRange().getValues();
+    if (values.length < 2) return;
 
-  expiredRows.forEach(function (rowNumber) {
-    sheet.deleteRow(rowNumber);
-  });
+    const headers = values[0];
+    const expCol = headers.indexOf('expiresAt');
+    if (expCol === -1) return;
+
+    const now = Date.now();
+    let hasExpired = false;
+    const remainingRows = [headers];
+
+    for (let i = 1; i < values.length; i += 1) {
+      const row = values[i];
+      const expTime = new Date(row[expCol]).getTime();
+      if (expTime > now) {
+        remainingRows.push(row);
+      } else {
+        hasExpired = true;
+      }
+    }
+
+    if (hasExpired) {
+      sheet.clearContents();
+      sheet.getRange(1, 1, remainingRows.length, headers.length).setValues(remainingRows);
+    }
+  } catch (err) {
+    console.warn('Session cleanup warning:', err);
+  }
 }
 
 function loginAttemptKey_(email) {
@@ -419,29 +493,48 @@ function cleanText_(value, maxLength) {
     .slice(0, maxLength);
 }
 
+function getPepper_() {
+  if (!cachedPepper_) {
+    const properties = PropertiesService.getScriptProperties();
+    cachedPepper_ = properties.getProperty('PASSWORD_PEPPER');
+    if (!cachedPepper_) {
+      cachedPepper_ = Utilities.getUuid() + Utilities.getUuid() + Utilities.getUuid();
+      properties.setProperty('PASSWORD_PEPPER', cachedPepper_);
+    }
+  }
+  return cachedPepper_;
+}
+
+function getSpreadsheet_() {
+  if (!cachedSpreadsheet_) {
+    cachedSpreadsheet_ = SpreadsheetApp.openById(AUTH_CONFIG.spreadsheetId);
+  }
+  return cachedSpreadsheet_;
+}
+
 function getSheet_(name) {
-  const sheet = ensureAuthSetup_().getSheetByName(name);
+  const spreadsheet = getSpreadsheet_();
+  let sheet = spreadsheet.getSheetByName(name);
 
   if (!sheet) {
-    throw new Error('인증용 시트를 준비하지 못했습니다.');
+    ensureAuthSetup_();
+    sheet = spreadsheet.getSheetByName(name);
+  }
+
+  if (!sheet) {
+    throw new Error('인증용 시트를 준비하지 못했습니다: ' + name);
   }
 
   return sheet;
 }
 
 function ensureAuthSetup_() {
-  const spreadsheet = SpreadsheetApp.openById(AUTH_CONFIG.spreadsheetId);
+  const spreadsheet = getSpreadsheet_();
 
   createSheetIfMissing_(spreadsheet, AUTH_CONFIG.usersSheet, USER_HEADERS);
   createSheetIfMissing_(spreadsheet, AUTH_CONFIG.sessionsSheet, SESSION_HEADERS);
 
-  const properties = PropertiesService.getScriptProperties();
-  if (!properties.getProperty('PASSWORD_PEPPER')) {
-    properties.setProperty(
-      'PASSWORD_PEPPER',
-      Utilities.getUuid() + Utilities.getUuid() + Utilities.getUuid()
-    );
-  }
+  getPepper_();
 
   return spreadsheet;
 }
@@ -454,14 +547,14 @@ function getObjects_(sheet) {
 
   const headers = values[0];
   return values.slice(1)
-    .filter(function (row) { return row[0]; })
-    .map(function (row, rowIndex) {
-      const item = { __rowNumber: rowIndex + 2 };
+    .map(function (row, index) {
+      const item = { __rowNumber: index + 2 };
       headers.forEach(function (header, columnIndex) {
         item[header] = row[columnIndex];
       });
       return item;
-    });
+    })
+    .filter(function (item) { return item.id || item.tokenHash; });
 }
 
 function createSheetIfMissing_(spreadsheet, name, headers) {

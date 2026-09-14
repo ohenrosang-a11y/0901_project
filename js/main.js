@@ -1,4 +1,4 @@
-const AUTH_API_URL = "https://script.google.com/macros/s/AKfycbxQA78LuHfKfVVvevc_haXXc9tfdP_qbPPHjV4hurwvkhjUe-KrUL0PA6er0-eC_wjQ/exec";
+const AUTH_API_URL = "https://script.google.com/macros/s/AKfycby9Gj1B9JDaKVtAh6cp-XmYJQqMO621nxsonjmQfXzQa1qk8FVjYvGK1_jQSzUpRK0L/exec";
 
 // 1. 기본 제공 게시글 데이터
 const defaultPosts = [

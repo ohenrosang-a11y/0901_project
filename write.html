@@ -1,2 +1,64 @@
-<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>새 글 쓰기 — 기록의 온도</title><link rel="stylesheet" href="css/style.css"></head>
-<body><main class="editor-shell"><header class="editor-top"><a class="brand" href="index.html"><span class="brand-mark">記</span><span>기록의 온도</span></a><p class="draft-status" role="status">새 글</p><div class="editor-actions"><button class="button secondary" type="button" data-save>임시저장</button><button class="button primary" type="submit" form="editor-form">발행하기</button></div></header><form id="editor-form" class="editor-form editor-main"><label class="sr-only" for="editor-category">카테고리</label><select id="editor-category" class="editor-category"><option>개발</option><option>생각</option><option>일상</option></select><label class="sr-only" for="post-title">제목</label><input id="post-title" class="title-input" type="text" placeholder="제목을 입력하세요" maxlength="80"><label class="sr-only" for="post-summary">요약</label><input id="post-summary" class="summary-input" type="text" placeholder="이 글을 소개하는 짧은 문장을 적어주세요" maxlength="140"><div class="editor-toolbar" aria-label="서식 도구"><button type="button" data-format="**" title="굵게"><strong>B</strong></button><button type="button" data-format="_" title="기울임"><em>I</em></button><button type="button" data-format="## " title="제목">H</button><button type="button" data-format="> " title="인용">❝</button><button type="button" data-format="`" title="코드">&lt;/&gt;</button></div><label class="sr-only" for="post-body">본문</label><textarea id="post-body" class="body-input" placeholder="당신의 이야기를 시작해 보세요.&#10;&#10;완벽한 문장보다 솔직한 첫 문장이면 충분합니다."></textarea></form></main><script src="js/main.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>새 글 쓰기 — 기록의 온도</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <main class="editor-shell">
+    <header class="editor-top">
+      <div class="editor-top-left">
+        <a class="brand" href="index.html" aria-label="기록의 온도 홈">
+          <span class="brand-mark">記</span>
+          <span>기록의 온도</span>
+        </a>
+        <span class="editor-divider" aria-hidden="true">/</span>
+        <span class="editor-mode-label">글 작성하기</span>
+      </div>
+      <p class="draft-status" role="status">새 글</p>
+      <div class="editor-actions">
+        <a href="index.html" class="button secondary text-button">나가기</a>
+        <button class="button secondary" type="button" data-save>임시저장</button>
+        <button class="button primary" type="submit" form="editor-form">발행하기</button>
+      </div>
+    </header>
+
+    <div class="editor-main">
+      <div class="author-notice-bar" id="editor-author-bar">
+        <span id="editor-author-text">작성자: <strong>게스트</strong> (로그인 시 작성자 정보가 등록됩니다)</span>
+        <a href="login.html" id="editor-login-link">로그인하기 →</a>
+      </div>
+
+      <form id="editor-form" class="editor-form" novalidate>
+        <label class="sr-only" for="editor-category">카테고리</label>
+        <select id="editor-category" class="editor-category">
+          <option value="개발">개발</option>
+          <option value="생각">생각</option>
+          <option value="일상">일상</option>
+        </select>
+
+        <label class="sr-only" for="post-title">제목</label>
+        <input id="post-title" class="title-input" type="text" placeholder="제목을 입력하세요" maxlength="100" required />
+
+        <label class="sr-only" for="post-summary">요약</label>
+        <input id="post-summary" class="summary-input" type="text" placeholder="이 글을 소개하는 짧은 문장을 적어주세요 (선택 사항)" maxlength="140" />
+
+        <div class="editor-toolbar" aria-label="서식 도구">
+          <button type="button" data-format="**" title="굵게"><strong>B</strong></button>
+          <button type="button" data-format="_" title="기울임"><em>I</em></button>
+          <button type="button" data-format="## " title="제목">H</button>
+          <button type="button" data-format="> " title="인용">❝</button>
+          <button type="button" data-format="`" title="코드">&lt;/&gt;</button>
+        </div>
+
+        <label class="sr-only" for="post-body">본문</label>
+        <textarea id="post-body" class="body-input" placeholder="당신의 이야기를 시작해 보세요.&#10;&#10;완벽한 문장보다 솔직한 첫 문장이면 충분합니다." required></textarea>
+      </form>
+    </div>
+  </main>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

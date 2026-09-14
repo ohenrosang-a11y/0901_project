@@ -30,3 +30,11 @@
 .auth-notice-card h2{margin:8px 0 10px;font-family:var(--serif);font-size:28px}
 .auth-notice-desc{color:var(--muted);font-size:14px;margin-bottom:24px}
 .auth-notice-actions{display:flex;justify-content:center;gap:12px}
+.editor-top-left{display:flex;align-items:center;gap:14px}
+.editor-divider{color:var(--line);user-select:none}
+.editor-mode-label{font-size:13px;font-weight:600;color:var(--muted)}
+.author-notice-bar{display:flex;justify-content:space-between;align-items:center;padding:12px 0;margin-bottom:15px;border-bottom:1px dashed var(--line);font-size:13px;color:var(--muted)}
+.author-notice-bar strong{color:var(--ink)}
+.author-notice-bar a{color:var(--accent);font-weight:600;margin-left:6px}
+.button.text-button{border:0;background:transparent;color:var(--muted);padding:8px 12px}
+.button.text-button:hover{color:var(--ink);background:transparent}

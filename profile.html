@@ -65,6 +65,22 @@
             <button type="button" class="button secondary" id="profile-logout-btn">로그아웃</button>
           </div>
         </div>
+
+        <!-- 내가 작성한 글 관리 카드 (CRUD) -->
+        <div class="user-card my-posts-card">
+          <div class="my-posts-header">
+            <div>
+              <h2 class="section-title">내가 작성한 글 관리</h2>
+              <p class="section-desc">발행한 글을 확인하고 수정하거나 삭제할 수 있습니다.</p>
+            </div>
+            <span class="post-count-badge" id="my-posts-count">0편</span>
+          </div>
+          <div id="my-posts-list" class="my-posts-list"></div>
+          <div id="my-posts-empty" class="my-posts-empty" hidden>
+            <p>아직 작성한 글이 없습니다.</p>
+            <a href="write.html" class="button secondary btn-sm">첫 글 작성하기 →</a>
+          </div>
+        </div>
       </div>
     </section>
 

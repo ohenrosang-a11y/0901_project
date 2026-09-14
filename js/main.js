@@ -101,7 +101,7 @@ const defaultPosts = [
   }
 ];
 
-// 2. 발행된 사용자 작성 글 불러오기 및 전체 글 목록 반환
+// 2. 게시글 CRUD 스토리지 헬퍼 함수
 function getStoredCustomPosts() {
   try {
     const raw = localStorage.getItem("blog-custom-posts");
@@ -109,6 +109,16 @@ function getStoredCustomPosts() {
   } catch (e) {
     return [];
   }
+}
+
+function saveCustomPosts(list) {
+  localStorage.setItem("blog-custom-posts", JSON.stringify(list));
+}
+
+function deleteCustomPost(id) {
+  const posts = getStoredCustomPosts();
+  const next = posts.filter((p) => String(p.id) !== String(id));
+  saveCustomPosts(next);
 }
 
 function getAllPosts() {
@@ -200,7 +210,7 @@ more?.addEventListener("click", () => {
 
 renderPosts();
 
-// 5. 글 상세 페이지 동적 렌더링
+// 5. 글 상세 페이지 동적 렌더링 (R: Read)
 function escapeHtml(str) {
   return String(str || "")
     .replace(/&/g, "&amp;")
@@ -263,6 +273,8 @@ function renderPostDetailPage() {
   const post = all.find((p) => String(p.id) === String(postId));
   if (!post) return;
 
+  const isCustomPost = getStoredCustomPosts().some((p) => String(p.id) === String(post.id));
+
   // Title
   document.title = `${post.title} — 기록의 온도`;
 
@@ -274,10 +286,33 @@ function renderPostDetailPage() {
   const titleEl = document.querySelector(".article-header h1");
   if (titleEl) titleEl.textContent = post.title;
 
-  // Meta
+  // Meta & Edit/Delete actions
   const metaEl = document.querySelector(".article-meta");
   if (metaEl) {
-    metaEl.innerHTML = `<span>${escapeHtml(post.author || "김민준")}</span><span>·</span><time>${escapeHtml(post.date)}</time><span>·</span><span>${escapeHtml(post.read)} 소요</span>`;
+    metaEl.innerHTML = `
+      <span>${escapeHtml(post.author || "김민준")}</span><span>·</span>
+      <time>${escapeHtml(post.date)}</time><span>·</span>
+      <span>${escapeHtml(post.read)} 소요</span>
+      ${
+        isCustomPost
+          ? `
+        <div class="article-actions">
+          <a href="write.html?edit=${encodeURIComponent(post.id)}" class="button secondary btn-sm btn-edit">수정</a>
+          <button type="button" class="button secondary btn-sm btn-delete" id="detail-delete-btn" data-delete-id="${post.id}">삭제</button>
+        </div>`
+          : ""
+      }
+    `;
+
+    if (isCustomPost) {
+      document.querySelector("#detail-delete-btn")?.addEventListener("click", () => {
+        if (confirm(`"${post.title}" 글을 정말 삭제하시겠습니까?`)) {
+          deleteCustomPost(post.id);
+          alert("글이 삭제되었습니다.");
+          location.href = "profile.html";
+        }
+      });
+    }
   }
 
   // Cover Visual
@@ -483,7 +518,74 @@ async function handleLogout() {
   }
 }
 
-// 9. 프로필 페이지 렌더링
+// 9. 프로필 페이지 내 작성한 글 목록 렌더링 (U: Update & D: Delete 관리)
+function renderMyPostsList(auth) {
+  const listEl = document.querySelector("#my-posts-list");
+  const countEl = document.querySelector("#my-posts-count");
+  const emptyEl = document.querySelector("#my-posts-empty");
+  if (!listEl) return;
+
+  const customPosts = getStoredCustomPosts();
+  let userPosts = customPosts;
+  if (auth && auth.user) {
+    userPosts = customPosts.filter(
+      (p) =>
+        !p.userId ||
+        p.userId === auth.user.id ||
+        p.author === auth.user.name ||
+        p.authorNickname === auth.user.nickname
+    );
+  }
+
+  if (countEl) countEl.textContent = `${userPosts.length}편`;
+
+  if (userPosts.length === 0) {
+    listEl.innerHTML = "";
+    if (emptyEl) emptyEl.hidden = false;
+    return;
+  }
+
+  if (emptyEl) emptyEl.hidden = true;
+
+  listEl.innerHTML = userPosts
+    .map(
+      (p) => `
+      <div class="my-post-item" data-id="${escapeHtml(p.id)}">
+        <div class="my-post-info">
+          <div class="my-post-meta">
+            <span class="category">${escapeHtml(p.category)}</span>
+            <span class="date">${escapeHtml(p.date)}</span>
+            <span class="read-time">· ${escapeHtml(p.read)}</span>
+          </div>
+          <h3 class="my-post-title">
+            <a href="post-detail.html?id=${encodeURIComponent(p.id)}">${escapeHtml(p.title)}</a>
+          </h3>
+          <p class="my-post-excerpt">${escapeHtml(p.excerpt)}</p>
+        </div>
+        <div class="my-post-actions">
+          <a href="post-detail.html?id=${encodeURIComponent(p.id)}" class="button secondary btn-sm" title="글 읽기">보기</a>
+          <a href="write.html?edit=${encodeURIComponent(p.id)}" class="button secondary btn-sm btn-edit" title="글 수정">수정</a>
+          <button type="button" class="button secondary btn-sm btn-delete" data-delete-id="${escapeHtml(p.id)}" title="글 삭제">삭제</button>
+        </div>
+      </div>
+    `
+    )
+    .join("");
+
+  listEl.querySelectorAll(".btn-delete").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const deleteId = btn.dataset.deleteId;
+      const target = customPosts.find((p) => String(p.id) === String(deleteId));
+      const targetTitle = target ? `"${target.title}" ` : "";
+      if (confirm(`${targetTitle}글을 정말 삭제하시겠습니까?`)) {
+        deleteCustomPost(deleteId);
+        renderMyPostsList(auth);
+      }
+    });
+  });
+}
+
+// 10. 프로필 페이지 전체 렌더링
 function renderProfilePage(auth) {
   const userSec = document.querySelector("#user-profile-view"),
     guestSec = document.querySelector("#guest-profile-view");
@@ -509,6 +611,8 @@ function renderProfilePage(auth) {
         avatarEl.textContent = (u.name || u.nickname || "U")
           .slice(0, 1)
           .toUpperCase();
+
+      renderMyPostsList(auth);
     } else {
       authRequest({ action: "me", token: auth.token })
         .then((res) => {
@@ -532,7 +636,7 @@ function renderProfilePage(auth) {
   }
 }
 
-// 10. 네비게이션 로그인/로그아웃/프로필 UI 갱신
+// 11. 네비게이션 로그인/로그아웃/프로필 UI 갱신
 function updateAuthUI() {
   const auth = getStoredAuth();
   const loginLinks = document.querySelectorAll(
@@ -576,7 +680,7 @@ function updateAuthUI() {
 }
 updateAuthUI();
 
-// 11. 좋아요 및 링크 복사
+// 12. 좋아요 및 링크 복사
 const like = document.querySelector("[data-like]");
 like?.addEventListener("click", () => {
   like.classList.toggle("is-active");
@@ -595,7 +699,7 @@ copy?.addEventListener("click", async () => {
   }
 });
 
-// 12. 글쓰기 에디터 (임시저장 및 실제 글 발행 기능)
+// 13. 글쓰기/글수정 에디터 (C: Create & U: Update)
 const editor =
   document.querySelector("#editor-form") ||
   document.querySelector(".editor-form");
@@ -614,7 +718,20 @@ if (editor) {
   const status = document.querySelector(".draft-status");
   const authorText = document.querySelector("#editor-author-text");
   const loginLink = document.querySelector("#editor-login-link");
+  const modeLabel = document.querySelector("#editor-mode-label");
+  const submitBtn = document.querySelector("#editor-submit-btn");
+  const saveBtn = document.querySelector("#editor-save-btn");
   const draftKey = "blog-draft";
+
+  // 수정 모드 확인 (?edit=id 또는 ?id=id)
+  const urlParams = new URLSearchParams(location.search);
+  const editId = urlParams.get("edit") || urlParams.get("id");
+  let editingPost = null;
+
+  if (editId) {
+    const customList = getStoredCustomPosts();
+    editingPost = customList.find((p) => String(p.id) === String(editId));
+  }
 
   // 작성자 정보 표시
   const auth = getStoredAuth();
@@ -628,38 +745,51 @@ if (editor) {
     }
   }
 
-  // 임시저장 데이터 불러오기
-  try {
-    const draft = JSON.parse(localStorage.getItem(draftKey));
-    if (draft) {
-      if (title) title.value = draft.title || "";
-      if (summary) summary.value = draft.summary || "";
-      if (body) body.value = draft.body || "";
-      if (category) category.value = draft.category || "개발";
-      if (status) status.textContent = "임시저장본 불러옴";
-    }
-  } catch (e) {}
+  if (editingPost) {
+    // === 수정 모드 (Update Mode) ===
+    document.title = `글 수정: ${editingPost.title} — 기록의 온도`;
+    if (modeLabel) modeLabel.textContent = "글 수정하기";
+    if (submitBtn) submitBtn.textContent = "수정 완료";
+    if (status) status.textContent = "기존 글 수정 모드";
+    if (saveBtn) saveBtn.style.display = "none";
 
-  // 임시저장
-  const saveDraft = () => {
-    localStorage.setItem(
-      draftKey,
-      JSON.stringify({
-        title: title?.value || "",
-        summary: summary?.value || "",
-        body: body?.value || "",
-        category: category?.value || "개발",
-      })
-    );
-    if (status) {
-      status.textContent = `${new Date().toLocaleTimeString("ko-KR", {
-        hour: "2-digit",
-        minute: "2-digit",
-      })} 임시저장됨`;
-    }
-  };
+    if (title) title.value = editingPost.title || "";
+    if (summary) summary.value = editingPost.excerpt || "";
+    if (category) category.value = editingPost.category || "개발";
+    if (body) body.value = editingPost.body || "";
+  } else {
+    // === 새 글 작성 모드 (Create Mode) ===
+    try {
+      const draft = JSON.parse(localStorage.getItem(draftKey));
+      if (draft) {
+        if (title) title.value = draft.title || "";
+        if (summary) summary.value = draft.summary || "";
+        if (body) body.value = draft.body || "";
+        if (category) category.value = draft.category || "개발";
+        if (status) status.textContent = "임시저장본 불러옴";
+      }
+    } catch (e) {}
 
-  document.querySelector("[data-save]")?.addEventListener("click", saveDraft);
+    const saveDraft = () => {
+      localStorage.setItem(
+        draftKey,
+        JSON.stringify({
+          title: title?.value || "",
+          summary: summary?.value || "",
+          body: body?.value || "",
+          category: category?.value || "개발",
+        })
+      );
+      if (status) {
+        status.textContent = `${new Date().toLocaleTimeString("ko-KR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })} 임시저장됨`;
+      }
+    };
+
+    saveBtn?.addEventListener("click", saveDraft);
+  }
 
   // 서식 도구 툴바
   document.querySelectorAll("[data-format]").forEach((btn) =>
@@ -674,7 +804,7 @@ if (editor) {
     })
   );
 
-  // 글 발행하기
+  // 글 발행/수정 제출
   editor.addEventListener("submit", (e) => {
     e.preventDefault();
     const titleVal = title?.value.trim() || "";
@@ -694,42 +824,58 @@ if (editor) {
     }
 
     if (!summaryVal) {
-      // 본문 첫 90자로 요약 자동 생성
       summaryVal =
         bodyVal.replace(/[#*`_>]/g, "").trim().slice(0, 90) + "...";
     }
 
-    const currentAuth = getStoredAuth();
-    const authorName = currentAuth.user ? currentAuth.user.name : "게스트";
-    const authorNick = currentAuth.user ? currentAuth.user.nickname : "";
     const readMinutes = Math.max(1, Math.ceil(bodyVal.length / 300));
-    const now = new Date();
-    const dateStr = `${now.getFullYear()}. ${String(now.getMonth() + 1).padStart(2, "0")}. ${String(now.getDate()).padStart(2, "0")}`;
-
-    const newPost = {
-      id: "post_" + Date.now(),
-      title: titleVal,
-      category: catVal,
-      date: dateStr,
-      read: `${readMinutes}분`,
-      excerpt: summaryVal,
-      body: bodyVal,
-      author: authorName,
-      authorNickname: authorNick,
-      visual: `{ ${catVal} }`,
-      createdAt: Date.now(),
-    };
-
-    // 저장소에 새 글 추가
     const customList = getStoredCustomPosts();
-    customList.unshift(newPost);
-    localStorage.setItem("blog-custom-posts", JSON.stringify(customList));
 
-    // 임시저장 제거
-    localStorage.removeItem(draftKey);
+    if (editingPost) {
+      // 1. 기존 글 수정 (Update)
+      const idx = customList.findIndex((p) => String(p.id) === String(editingPost.id));
+      if (idx !== -1) {
+        customList[idx].title = titleVal;
+        customList[idx].category = catVal;
+        customList[idx].excerpt = summaryVal;
+        customList[idx].body = bodyVal;
+        customList[idx].read = `${readMinutes}분`;
+        customList[idx].visual = `{ ${catVal} }`;
+        customList[idx].updatedAt = Date.now();
+        saveCustomPosts(customList);
+      }
+      alert("글이 성공적으로 수정되었습니다.");
+      location.href = "profile.html";
+    } else {
+      // 2. 새 글 생성 (Create)
+      const currentAuth = getStoredAuth();
+      const authorName = currentAuth.user ? currentAuth.user.name : "게스트";
+      const authorNick = currentAuth.user ? currentAuth.user.nickname : "";
+      const authorId = currentAuth.user ? currentAuth.user.id : null;
+      const now = new Date();
+      const dateStr = `${now.getFullYear()}. ${String(now.getMonth() + 1).padStart(2, "0")}. ${String(now.getDate()).padStart(2, "0")}`;
 
-    if (status) status.textContent = "발행 완료!";
-    alert("글이 성공적으로 발행되었습니다!");
-    location.href = `post-detail.html?id=${encodeURIComponent(newPost.id)}`;
+      const newPost = {
+        id: "post_" + Date.now(),
+        userId: authorId,
+        title: titleVal,
+        category: catVal,
+        date: dateStr,
+        read: `${readMinutes}분`,
+        excerpt: summaryVal,
+        body: bodyVal,
+        author: authorName,
+        authorNickname: authorNick,
+        visual: `{ ${catVal} }`,
+        createdAt: Date.now(),
+      };
+
+      customList.unshift(newPost);
+      saveCustomPosts(customList);
+      localStorage.removeItem(draftKey);
+
+      alert("글이 성공적으로 발행되었습니다!");
+      location.href = "profile.html";
+    }
   });
 }

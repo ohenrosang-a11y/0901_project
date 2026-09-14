@@ -1,4 +1,4 @@
-const AUTH_API_URL="https://script.google.com/macros/s/AKfycbxhZSuMXfAafZ-lg5wfv87dnaOFTFDjt54V-LVuMizWhClkRj-bc1NDNZ5MMx6HlSv6oA/exec";
+const AUTH_API_URL="https://script.google.com/macros/s/AKfycbxQA78LuHfKfVVvevc_haXXc9tfdP_qbPPHjV4hurwvkhjUe-KrUL0PA6er0-eC_wjQ/exec";
 const posts=[
  {title:"좋은 코드는 읽는 사람을 배려한다",category:"개발",date:"2026. 09. 05",read:"6분",excerpt:"코드는 컴퓨터보다 사람이 더 자주 읽습니다. 협업하며 배운 읽기 좋은 코드의 작은 원칙들을 정리했습니다.",visual:"{ clean code }"},
  {title:"사이드 프로젝트를 끝내는 방법",category:"개발",date:"2026. 08. 28",read:"8분",excerpt:"거창한 계획보다 완성의 경험이 중요합니다. 범위를 줄이고 끝까지 배포하기 위해 사용한 현실적인 방법들.",visual:"ship →"},

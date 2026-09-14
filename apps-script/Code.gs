@@ -10,7 +10,7 @@
  */
 
 const AUTH_CONFIG = Object.freeze({
-  spreadsheetId: '1z7rvJsh5ZaNGIwxm2ubj9AT1lH5EF4SvUiuaLhBSz9I',
+  spreadsheetId: '1RhBPPLH-jYe6w63h_ud5S8gcT9-GEKI9eDSfkvgTvp8',
   usersSheet: 'Users',
   sessionsSheet: 'Sessions',
   hashIterations: 12000,

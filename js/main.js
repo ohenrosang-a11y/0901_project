@@ -1,6 +1,6 @@
 const AUTH_API_URL = "https://script.google.com/macros/s/AKfycbxQA78LuHfKfVVvevc_haXXc9tfdP_qbPPHjV4hurwvkhjUe-KrUL0PA6er0-eC_wjQ/exec";
 
-// 1. 기본 제공 게시글 목록
+// 1. 기본 제공 게시글 데이터
 const defaultPosts = [
   {
     id: "post-1",
@@ -40,7 +40,7 @@ const defaultPosts = [
     body: `사이드 프로젝트의 가장 큰 적은 거창한 계획입니다. 처음에는 온갖 멋진 기능과 완벽한 설계를 꿈꾸지만, 일상의 피로와 마주하면 프로젝트는 서서히 멈춥니다.
 
 ## 범위를 반으로, 다시 그 반으로 줄이기
-가장 먼저 해야 할 일은 핵심 가치 하나만 남기고 모든 것을 덜어내는 것입니다. 회원가입이 없어도 동작할 수 있다면 빼고, 세련된 애니메이션 대신 빠른 배포를 택하세요. 
+가장 먼저 해야 할 일은 핵심 가치 하나만 남기고 모든 것을 덜어내는 것입니다. 회원가입이 없어도 동작할 수 있다면 빼고, 세련된 애니메이션 대신 빠른 배포를 택하세요.
 
 > 완성되지 않은 100점짜리 기획보다, 배포된 60점짜리 작은 제품이 훨씬 더 많은 것을 가르쳐 줍니다.
 
@@ -101,7 +101,7 @@ const defaultPosts = [
   }
 ];
 
-// 2. 게시글 CRUD 스토리지 헬퍼 함수
+// 2. 글 데이터 저장소 헬퍼 함수 (CRUD 공통)
 function getStoredCustomPosts() {
   try {
     const raw = localStorage.getItem("blog-custom-posts");
@@ -143,7 +143,7 @@ if (toggle && nav) {
   });
 }
 
-// 4. 메인 피드 글 목록 렌더링 (검색, 필터, 페이징)
+// 4. 메인 피드 글 목록 렌더링 (실제 데이터 기반 목록 카드 & 상세 이동 연결)
 const list = document.querySelector("#post-list"),
   search = document.querySelector("#post-search"),
   filters = document.querySelectorAll("[data-filter]"),
@@ -165,24 +165,37 @@ function renderPosts() {
 
   list.innerHTML = filtered
     .slice(0, visibleCount)
-    .map(
-      (p) => `
-      <article class="post-item">
+    .map((p) => {
+      const isCustom = !String(p.id).startsWith("post-");
+      const detailUrl = `post-detail.html?id=${encodeURIComponent(p.id)}`;
+      return `
+      <article class="post-item" data-url="${detailUrl}">
         <div class="post-content">
           <div class="post-meta">
             <span class="category">${escapeHtml(p.category)}</span>
             <span>${escapeHtml(p.date)}</span>
             <span>· ${escapeHtml(p.read)}</span>
             ${p.author ? `<span>· ${escapeHtml(p.author)}</span>` : ""}
+            ${isCustom ? `<span class="post-badge-new">NEW</span>` : ""}
           </div>
-          <h3><a href="post-detail.html?id=${encodeURIComponent(p.id)}">${escapeHtml(p.title)}</a></h3>
+          <h3><a href="${detailUrl}">${escapeHtml(p.title)}</a></h3>
           <p class="post-excerpt">${escapeHtml(p.excerpt)}</p>
         </div>
-        <a class="post-thumb placeholder" href="post-detail.html?id=${encodeURIComponent(p.id)}" aria-label="${escapeHtml(p.title)} 읽기">${escapeHtml(p.visual || "{ note }")}</a>
+        <a class="post-thumb placeholder" href="${detailUrl}" aria-label="${escapeHtml(p.title)} 읽기">${escapeHtml(p.visual || "{ note }")}</a>
       </article>
-    `
-    )
+    `;
+    })
     .join("");
+
+  // 카드 전체 클릭 시 상세 페이지로 이동
+  list.querySelectorAll(".post-item").forEach((card) => {
+    card.addEventListener("click", (e) => {
+      if (!e.target.closest("a")) {
+        const url = card.dataset.url;
+        if (url) location.href = url;
+      }
+    });
+  });
 
   if (empty) empty.hidden = filtered.length > 0;
   if (more) more.hidden = visibleCount >= filtered.length;
@@ -221,9 +234,10 @@ function escapeHtml(str) {
 }
 
 function formatMarkdownToHtml(content) {
-  if (!content) return "";
+  if (!content) return { html: "", headings: [] };
   const lines = content.split(/\r?\n/);
   const htmlParts = [];
+  const headings = [];
   let currentP = [];
 
   const flushP = () => {
@@ -247,8 +261,10 @@ function formatMarkdownToHtml(content) {
       flushP();
     } else if (trimmed.startsWith("## ")) {
       flushP();
-      const headingText = escapeHtml(trimmed.slice(3).trim());
-      htmlParts.push(`<h2>${formatInline(headingText)}</h2>`);
+      const headingText = trimmed.slice(3).trim();
+      const headingId = "heading-" + (headings.length + 1);
+      headings.push({ id: headingId, title: headingText });
+      htmlParts.push(`<h2 id="${headingId}">${formatInline(escapeHtml(headingText))}</h2>`);
     } else if (trimmed.startsWith("> ")) {
       flushP();
       const quoteText = escapeHtml(trimmed.slice(2).trim());
@@ -258,7 +274,7 @@ function formatMarkdownToHtml(content) {
     }
   });
   flushP();
-  return htmlParts.join("");
+  return { html: htmlParts.join(""), headings };
 }
 
 function renderPostDetailPage() {
@@ -273,20 +289,22 @@ function renderPostDetailPage() {
   const post = all.find((p) => String(p.id) === String(postId));
   if (!post) return;
 
-  const isCustomPost = getStoredCustomPosts().some((p) => String(p.id) === String(post.id));
+  const isCustomPost = getStoredCustomPosts().some(
+    (p) => String(p.id) === String(post.id)
+  );
 
-  // Title
+  // 문서 타이틀 변경
   document.title = `${post.title} — 기록의 온도`;
 
-  // Category
+  // 카테고리
   const catEl = document.querySelector(".article-header .category");
   if (catEl) catEl.textContent = post.category;
 
-  // Heading Title
+  // 제목
   const titleEl = document.querySelector(".article-header h1");
   if (titleEl) titleEl.textContent = post.title;
 
-  // Meta & Edit/Delete actions
+  // 메타 정보 및 수정/삭제 액션
   const metaEl = document.querySelector(".article-meta");
   if (metaEl) {
     metaEl.innerHTML = `
@@ -298,7 +316,7 @@ function renderPostDetailPage() {
           ? `
         <div class="article-actions">
           <a href="write.html?edit=${encodeURIComponent(post.id)}" class="button secondary btn-sm btn-edit">수정</a>
-          <button type="button" class="button secondary btn-sm btn-delete" id="detail-delete-btn" data-delete-id="${post.id}">삭제</button>
+          <button type="button" class="button secondary btn-sm btn-delete" id="detail-delete-btn" data-delete-id="${escapeHtml(post.id)}">삭제</button>
         </div>`
           : ""
       }
@@ -309,22 +327,33 @@ function renderPostDetailPage() {
         if (confirm(`"${post.title}" 글을 정말 삭제하시겠습니까?`)) {
           deleteCustomPost(post.id);
           alert("글이 삭제되었습니다.");
-          location.href = "profile.html";
+          location.href = "index.html";
         }
       });
     }
   }
 
-  // Cover Visual
+  // 커버 비주얼
   const coverEl = document.querySelector(".article-cover");
   if (coverEl) coverEl.textContent = post.visual || `{ ${post.category} }`;
 
-  // Body Content
+  // 본문 및 목차 렌더링
   const bodyEl = document.querySelector(".article-body");
   if (bodyEl && post.body) {
-    const contentHtml = formatMarkdownToHtml(post.body);
+    const { html: contentHtml, headings } = formatMarkdownToHtml(post.body);
     const toc = document.querySelector(".article-toc");
-    if (toc) toc.style.display = "none";
+    if (toc) {
+      if (headings.length > 0) {
+        toc.style.display = "block";
+        toc.innerHTML =
+          `<p>이 글의 목차</p>` +
+          headings
+            .map((h) => `<a href="#${h.id}">${escapeHtml(h.title)}</a>`)
+            .join("");
+      } else {
+        toc.style.display = "none";
+      }
+    }
 
     bodyEl.innerHTML = `
       <p class="lead">${escapeHtml(post.excerpt)}</p>
@@ -368,7 +397,7 @@ document.querySelectorAll(".password-toggle").forEach((btn) =>
   })
 );
 
-// 7. 인증 관련 기능
+// 7. 회원 인증 관련 기능 (Apps Script 연동)
 function showAuthMessage(form, message, isError = false) {
   const box = form.querySelector(".success-box");
   if (!box) return;
@@ -518,7 +547,7 @@ async function handleLogout() {
   }
 }
 
-// 9. 프로필 페이지 내 작성한 글 목록 렌더링 (U: Update & D: Delete 관리)
+// 9. 프로필 페이지 내 작성 글 관리 렌더링 (U: Update & D: Delete)
 function renderMyPostsList(auth) {
   const listEl = document.querySelector("#my-posts-list");
   const countEl = document.querySelector("#my-posts-count");
@@ -548,9 +577,10 @@ function renderMyPostsList(auth) {
   if (emptyEl) emptyEl.hidden = true;
 
   listEl.innerHTML = userPosts
-    .map(
-      (p) => `
-      <div class="my-post-item" data-id="${escapeHtml(p.id)}">
+    .map((p) => {
+      const detailUrl = `post-detail.html?id=${encodeURIComponent(p.id)}`;
+      return `
+      <div class="my-post-item" data-url="${detailUrl}">
         <div class="my-post-info">
           <div class="my-post-meta">
             <span class="category">${escapeHtml(p.category)}</span>
@@ -558,22 +588,33 @@ function renderMyPostsList(auth) {
             <span class="read-time">· ${escapeHtml(p.read)}</span>
           </div>
           <h3 class="my-post-title">
-            <a href="post-detail.html?id=${encodeURIComponent(p.id)}">${escapeHtml(p.title)}</a>
+            <a href="${detailUrl}">${escapeHtml(p.title)}</a>
           </h3>
           <p class="my-post-excerpt">${escapeHtml(p.excerpt)}</p>
         </div>
         <div class="my-post-actions">
-          <a href="post-detail.html?id=${encodeURIComponent(p.id)}" class="button secondary btn-sm" title="글 읽기">보기</a>
+          <a href="${detailUrl}" class="button secondary btn-sm" title="글 읽기">보기</a>
           <a href="write.html?edit=${encodeURIComponent(p.id)}" class="button secondary btn-sm btn-edit" title="글 수정">수정</a>
           <button type="button" class="button secondary btn-sm btn-delete" data-delete-id="${escapeHtml(p.id)}" title="글 삭제">삭제</button>
         </div>
       </div>
-    `
-    )
+    `;
+    })
     .join("");
 
+  // 아이템 카드 클릭 시 상세 페이지 이동
+  listEl.querySelectorAll(".my-post-item").forEach((card) => {
+    card.addEventListener("click", (e) => {
+      if (!e.target.closest("a") && !e.target.closest("button")) {
+        const url = card.dataset.url;
+        if (url) location.href = url;
+      }
+    });
+  });
+
   listEl.querySelectorAll(".btn-delete").forEach((btn) => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
       const deleteId = btn.dataset.deleteId;
       const target = customPosts.find((p) => String(p.id) === String(deleteId));
       const targetTitle = target ? `"${target.title}" ` : "";
@@ -699,7 +740,7 @@ copy?.addEventListener("click", async () => {
   }
 });
 
-// 13. 글쓰기/글수정 에디터 (C: Create & U: Update)
+// 13. 글쓰기 및 글수정 에디터 (C: Create & U: Update)
 const editor =
   document.querySelector("#editor-form") ||
   document.querySelector(".editor-form");
@@ -844,8 +885,8 @@ if (editor) {
         customList[idx].updatedAt = Date.now();
         saveCustomPosts(customList);
       }
-      alert("글이 성공적으로 수정되었습니다.");
-      location.href = "profile.html";
+      alert("글이 성공적으로 수정되었습니다!\n상세 페이지로 이동합니다.");
+      location.href = `post-detail.html?id=${encodeURIComponent(editingPost.id)}`;
     } else {
       // 2. 새 글 생성 (Create)
       const currentAuth = getStoredAuth();
@@ -874,8 +915,8 @@ if (editor) {
       saveCustomPosts(customList);
       localStorage.removeItem(draftKey);
 
-      alert("글이 성공적으로 발행되었습니다!");
-      location.href = "profile.html";
+      alert("글이 성공적으로 발행되었습니다!\n메인 글 목록으로 이동합니다.");
+      location.href = "index.html#latest";
     }
   });
 }

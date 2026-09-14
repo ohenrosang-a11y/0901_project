@@ -3,22 +3,31 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>소개 | 홍길동</title>
+    <title>소개 | 복샘 — 기록의 온도</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" />
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
     <header class="site-header">
       <div class="container header-inner">
-        <a class="logo" href="index.html" aria-label="홈으로 이동">홍길동</a>
+        <a class="brand" href="index.html" aria-label="기록의 온도 홈">
+          <span class="brand-mark">記</span>
+          <span>기록의 온도</span>
+        </a>
         <button class="menu-toggle" type="button" aria-label="메뉴 열기" aria-expanded="false">
           <span></span>
           <span></span>
           <span></span>
         </button>
         <nav class="site-nav" aria-label="주요 메뉴">
-          <a class="active" href="about.html">소개</a>
-          <a href="skills.html">기술</a>
-          <a href="projects.html">프로젝트</a>
+          <a href="index.html">글</a>
+          <a class="active" href="profile.html">소개</a>
+          <a href="write.html">글쓰기</a>
+          <span class="nav-divider" aria-hidden="true"></span>
+          <a href="login.html" class="nav-login">로그인</a>
+          <a class="nav-cta nav-signup" href="signup.html">회원가입</a>
         </nav>
       </div>
     </header>
@@ -35,13 +44,13 @@
             </p>
           </div>
           <aside class="profile-card" aria-label="프로필 요약">
-            <img class="profile-image" src="assets/images/images.jfif" alt="홍길동 프로필 사진" />
-            <h2>홍길동</h2>
-            <p>프론트엔드 개발자 지망생</p>
+            <img class="profile-image" src="assets/images/images.jfif" alt="복샘 프로필 사진" />
+            <h2>복샘</h2>
+            <p>프론트엔드 개발자</p>
             <ul class="profile-meta">
               <li>관심 분야: 웹 UI, 접근성, 인터랙션</li>
-              <li>현재 학습: JavaScript, Git, React</li>
-              <li>이메일: example@email.com</li>
+              <li>주요 기술: JavaScript, CSS, React, Apps Script</li>
+              <li>이메일: boksem@example.com</li>
             </ul>
           </aside>
         </div>
@@ -59,15 +68,19 @@
           </article>
           <article class="skill-card">
             <h3>목표</h3>
-            <p>기본 웹 기술을 탄탄히 익힌 뒤 React와 Node.js까지 확장해 실제 서비스를 만들 수 있는 개발자가 되는 것입니다.</p>
+            <p>기본 웹 기술을 탄탄히 익힌 뒤 최신 프론트엔드 프레임워크와 클라우드 서비스까지 확장해 실제 가치를 제공하는 개발자가 되는 것입니다.</p>
           </article>
         </div>
       </section>
     </main>
 
     <footer class="site-footer">
-      <div class="container">
-        <p>&copy; 2026 홍길동. All rights reserved.</p>
+      <div class="container footer-inner">
+        <a class="brand" href="index.html"><span class="brand-mark">記</span><span>기록의 온도</span></a>
+        <p>&copy; 2026 복샘. All rights reserved.</p>
+        <div>
+          <a href="https://github.com/ohenrosang-a11y/0901_project" target="_blank" rel="noreferrer">GitHub</a>
+        </div>
       </div>
     </footer>
 

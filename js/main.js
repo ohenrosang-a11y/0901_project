@@ -1,105 +1,7 @@
 const AUTH_API_URL = "https://script.google.com/macros/s/AKfycbzn1psT8w_bRAKlSaJpPAM99OzOV4T-Z9LV4aGbYe3PW9JmRyMW6313zw7v-mCZbzMY/exec";
 
-// 1. 기본 제공 게시글 데이터
-const defaultPosts = [
-  {
-    id: "post-1",
-    title: "좋은 코드는 읽는 사람을 배려한다",
-    category: "개발",
-    date: "2026. 09. 05",
-    read: "6분",
-    excerpt: "코드는 컴퓨터보다 사람이 더 자주 읽습니다. 협업하며 배운 읽기 좋은 코드의 작은 원칙들을 정리했습니다.",
-    visual: "{ clean code }",
-    author: "김민준",
-    authorNickname: "minjune",
-    body: `코드는 컴퓨터가 실행하지만, 그 코드를 가장 오래 마주하는 것은 결국 사람입니다. 좋은 코드는 정답을 뽐내기보다 다음 사람의 이해를 돕습니다.
-
-처음 개발을 배울 때는 동작하는 코드를 만드는 것만으로 충분하다고 생각했습니다. 하지만 여러 사람과 하나의 제품을 오래 만들면서 기준이 달라졌습니다. 오늘의 영리한 한 줄보다 다음 달에도 편하게 고칠 수 있는 열 줄이 더 나을 때가 많았습니다.
-
-## 이름은 가장 가까운 설명서다
-변수와 함수의 이름은 코드에서 가장 자주 읽는 문장입니다. \`data\`나 \`value\`처럼 맥락을 감춘 이름보다, 무엇을 담고 왜 존재하는지 드러내는 이름이 좋습니다. 이름을 정하기 어렵다면 코드가 한 번에 너무 많은 일을 하는 것은 아닌지 살펴볼 신호이기도 합니다.
-
-> 좋은 이름은 주석 없이도 코드가 자신의 의도를 말하게 합니다.
-
-## 한 번에 하나의 맥락만 보여주기
-긴 함수는 읽는 사람이 머릿속에 많은 정보를 동시에 올려두게 만듭니다. 의미 있는 단위로 나누면 세부 구현을 잠시 접어 두고 전체 흐름부터 이해할 수 있습니다. 함수의 길이보다 중요한 것은 하나의 추상화 수준을 유지하는 일입니다.
-
-## 팀의 언어를 만드는 일
-코드 스타일은 개인의 취향보다 팀의 약속에 가깝습니다. 함께 이름의 규칙을 정하고 반복되는 판단을 자동화하면 리뷰에서는 더 중요한 문제에 집중할 수 있습니다. 결국 읽기 좋은 코드는 기술적 능력을 넘어 동료의 시간을 존중하는 태도에서 시작합니다.`
-  },
-  {
-    id: "post-2",
-    title: "사이드 프로젝트를 끝내는 방법",
-    category: "개발",
-    date: "2026. 08. 28",
-    read: "8분",
-    excerpt: "거창한 계획보다 완성의 경험이 중요합니다. 범위를 줄이고 끝까지 배포하기 위해 사용한 현실적인 방법들.",
-    visual: "ship →",
-    author: "김민준",
-    authorNickname: "minjune",
-    body: `사이드 프로젝트의 가장 큰 적은 거창한 계획입니다. 처음에는 온갖 멋진 기능과 완벽한 설계를 꿈꾸지만, 일상의 피로와 마주하면 프로젝트는 서서히 멈춥니다.
-
-## 범위를 반으로, 다시 그 반으로 줄이기
-가장 먼저 해야 할 일은 핵심 가치 하나만 남기고 모든 것을 덜어내는 것입니다. 회원가입이 없어도 동작할 수 있다면 빼고, 세련된 애니메이션 대신 빠른 배포를 택하세요.
-
-> 완성되지 않은 100점짜리 기획보다, 배포된 60점짜리 작은 제품이 훨씬 더 많은 것을 가르쳐 줍니다.
-
-## 피드백의 순환을 빠르게 만들기
-제품을 공개하고 단 한 명의 사용자라도 써보게 하는 순간, 프로젝트는 의무가 아닌 대화가 됩니다. 작게 만들어 빠르게 배포하세요.`
-  },
-  {
-    id: "post-3",
-    title: "여름의 끝에서 발견한 것들",
-    category: "일상",
-    date: "2026. 08. 19",
-    read: "4분",
-    excerpt: "유난히 길었던 여름, 익숙한 동네를 천천히 걸으며 새롭게 보게 된 장면과 마음에 관한 기록입니다.",
-    visual: "08 / 19",
-    author: "김민준",
-    authorNickname: "minjune",
-    body: `유난히 덥고 길었던 여름이 지나가고 있습니다. 해질녘 바람의 온도가 달라진 것을 느끼며 매일 걷던 동네 골목길을 천천히 걸었습니다.
-
-빠르게 지나칠 때는 보이지 않던 담벼락의 능소화와 작은 서점의 불빛이 눈에 들어왔습니다. 삶에서도 때로는 속도를 늦추어야만 보이는 것들이 있습니다.`
-  },
-  {
-    id: "post-4",
-    title: "꾸준함에 재능이 필요한가요",
-    category: "생각",
-    date: "2026. 08. 11",
-    read: "5분",
-    excerpt: "매일 잘하는 대신 다시 돌아오는 연습. 꾸준함을 의지가 아닌 환경의 문제로 바라봅니다.",
-    visual: "again.",
-    author: "김민준",
-    authorNickname: "minjune",
-    body: `무언가를 매일 꾸준히 하는 사람들을 보면 대단한 의지력이 있는 것처럼 보입니다. 하지만 꾸준함은 의지의 문제가 아니라 마찰을 줄이는 환경의 문제입니다.
-
-하루 실패했다고 포기하지 않고, 다음 날 아무 일 없었다는 듯 다시 시작하는 복원력이 꾸준함의 본질입니다.`
-  },
-  {
-    id: "post-5",
-    title: "CSS Grid로 만드는 유연한 레이아웃",
-    category: "개발",
-    date: "2026. 07. 30",
-    read: "7분",
-    excerpt: "복잡한 미디어 쿼리를 줄이고 콘텐츠에 맞춰 자연스럽게 반응하는 그리드 패턴을 소개합니다.",
-    visual: "# grid",
-    author: "김민준",
-    authorNickname: "minjune",
-    body: `CSS Grid는 2차원 레이아웃을 다루는 데 있어 가장 강력한 도구입니다. \`repeat(auto-fit, minmax(...))\` 구문만 익혀도 대부분의 반응형 카드를 미디어 쿼리 없이 구현할 수 있습니다.`
-  },
-  {
-    id: "post-6",
-    title: "느리게 읽는 시간",
-    category: "일상",
-    date: "2026. 07. 18",
-    read: "3분",
-    excerpt: "속도에서 잠시 벗어나 문장 하나를 오래 바라보는 일이 건네준 뜻밖의 여유에 대하여.",
-    visual: "pause",
-    author: "김민준",
-    authorNickname: "minjune",
-    body: `요즘 우리는 스크롤을 내리며 훑어보는 읽기에 익숙해져 있습니다. 한 권의 책을 천천히 읽으며 문장 사이의 여백을 음미하는 시간은 흩어진 주의력을 모아줍니다.`
-  }
-];
+// 1. 기본 제공 게시글 데이터 (더미 데이터 제거 완료 - 실제 작성 글만 표시)
+const defaultPosts = [];
 
 // 2. 글 데이터 저장소 헬퍼 함수 (CRUD 공통)
 function getStoredCustomPosts() {
@@ -153,6 +55,24 @@ const list = document.querySelector("#post-list"),
 let activeFilter = "all",
   visibleCount = 4;
 
+function renderPopularPosts() {
+  const popList = document.querySelector("#popular-list");
+  if (!popList) return;
+  const posts = getAllPosts();
+  if (!posts || posts.length === 0) {
+    popList.innerHTML = `<li class="no-popular-posts"><span>-</span><span>작성된 글이 없습니다.</span></li>`;
+    return;
+  }
+  const topPosts = posts.slice(0, 3);
+  popList.innerHTML = topPosts
+    .map((p, idx) => {
+      const num = String(idx + 1).padStart(2, "0");
+      const detailUrl = `post-detail.html?id=${encodeURIComponent(p.id)}`;
+      return `<li><span>${num}</span><a href="${detailUrl}">${escapeHtml(p.title)}</a></li>`;
+    })
+    .join("");
+}
+
 function renderPosts() {
   if (!list) return;
   const posts = getAllPosts();
@@ -197,8 +117,19 @@ function renderPosts() {
     });
   });
 
-  if (empty) empty.hidden = filtered.length > 0;
-  if (more) more.hidden = visibleCount >= filtered.length;
+  if (empty) {
+    empty.hidden = filtered.length > 0;
+    if (filtered.length === 0) {
+      empty.innerHTML = `
+        <div class="empty-state-box">
+          <p>아직 등록된 글이 없습니다.</p>
+          <a href="write.html" class="button primary btn-sm">첫 번째 글 작성하기 →</a>
+        </div>
+      `;
+    }
+  }
+  if (more) more.hidden = visibleCount >= filtered.length || filtered.length === 0;
+  renderPopularPosts();
 }
 
 filters.forEach((btn) =>
@@ -278,16 +209,26 @@ function formatMarkdownToHtml(content) {
 }
 
 function renderPostDetailPage() {
-  const articleLayout = document.querySelector(".article-layout");
-  if (!articleLayout) return;
+  const articleEl = document.querySelector("article");
+  if (!articleEl) return;
 
   const params = new URLSearchParams(location.search);
   const postId = params.get("id");
-  if (!postId) return;
-
   const all = getAllPosts();
-  const post = all.find((p) => String(p.id) === String(postId));
-  if (!post) return;
+  const post = postId ? all.find((p) => String(p.id) === String(postId)) : null;
+
+  if (!postId || !post) {
+    document.title = "게시글을 찾을 수 없습니다 — 기록의 온도";
+    articleEl.innerHTML = `
+      <div class="post-not-found">
+        <div style="font-size: 42px; margin-bottom: 16px;">📖</div>
+        <h1>게시글을 찾을 수 없습니다</h1>
+        <p>요청하신 글이 존재하지 않거나 삭제되었습니다.<br>메인 글 목록으로 돌아가서 다른 글을 확인해 보세요.</p>
+        <a href="index.html" class="button primary">글 목록으로 이동</a>
+      </div>
+    `;
+    return;
+  }
 
   const isCustomPost = getStoredCustomPosts().some(
     (p) => String(p.id) === String(post.id)
@@ -298,7 +239,7 @@ function renderPostDetailPage() {
 
   // 카테고리
   const catEl = document.querySelector(".article-header .category");
-  if (catEl) catEl.textContent = post.category;
+  if (catEl) catEl.textContent = post.category || "기록";
 
   // 제목
   const titleEl = document.querySelector(".article-header h1");
@@ -306,11 +247,12 @@ function renderPostDetailPage() {
 
   // 메타 정보 및 수정/삭제 액션
   const metaEl = document.querySelector(".article-meta");
+  const authorName = post.author || "복샘";
   if (metaEl) {
     metaEl.innerHTML = `
-      <span>${escapeHtml(post.author || "김민준")}</span><span>·</span>
-      <time>${escapeHtml(post.date)}</time><span>·</span>
-      <span>${escapeHtml(post.read)} 소요</span>
+      <span>${escapeHtml(authorName)}</span><span>·</span>
+      <time>${escapeHtml(post.date || "")}</time><span>·</span>
+      <span>${escapeHtml(post.read || "3분")} 소요</span>
       ${
         isCustomPost
           ? `
@@ -335,7 +277,7 @@ function renderPostDetailPage() {
 
   // 커버 비주얼
   const coverEl = document.querySelector(".article-cover");
-  if (coverEl) coverEl.textContent = post.visual || `{ ${post.category} }`;
+  if (coverEl) coverEl.textContent = post.visual || `{ ${post.category || "note"} }`;
 
   // 본문 및 목차 렌더링
   const bodyEl = document.querySelector(".article-body");
@@ -356,13 +298,13 @@ function renderPostDetailPage() {
     }
 
     bodyEl.innerHTML = `
-      <p class="lead">${escapeHtml(post.excerpt)}</p>
+      <p class="lead">${escapeHtml(post.excerpt || "")}</p>
       ${contentHtml}
-      <div class="tag-list"><span>#${escapeHtml(post.category)}</span><span>#기록</span></div>
+      <div class="tag-list"><span>#${escapeHtml(post.category || "기록")}</span><span>#기록</span></div>
       <div class="article-author">
-        <img src="assets/images/images.jfif" alt="${escapeHtml(post.author || "작성자")}">
+        <img src="assets/images/images.jfif" alt="${escapeHtml(authorName)}">
         <div>
-          <strong>${escapeHtml(post.author || "김민준")}</strong>
+          <strong>${escapeHtml(authorName)}</strong>
           <p>${post.authorNickname ? "@" + escapeHtml(post.authorNickname) + " · " : ""}배움과 생각을 솔직하게 기록합니다.</p>
         </div>
       </div>
@@ -449,14 +391,39 @@ function validateAuthForm(form) {
 }
 
 async function authRequest(payload) {
-  const response = await fetch(AUTH_API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify(payload),
-  });
-  if (!response.ok) throw new Error("인증 서버에 연결하지 못했습니다.");
-  return response.json();
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 12000);
+  try {
+    const response = await fetch(AUTH_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    if (!response.ok) throw new Error("인증 서버에 연결하지 못했습니다.");
+    return await response.json();
+  } catch (err) {
+    if (err.name === "AbortError") {
+      throw new Error("서버 응답 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.");
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
+
+// 로그인 페이지: 기억된 이메일 자동 완성
+(function initRememberedEmail() {
+  try {
+    const rememberedEmail = localStorage.getItem("blog_remember_email");
+    const emailInput = document.querySelector("#login-email");
+    const rememberCheckbox = document.querySelector("input[name=remember]");
+    if (rememberedEmail && emailInput) {
+      emailInput.value = rememberedEmail;
+      if (rememberCheckbox) rememberCheckbox.checked = true;
+    }
+  } catch (e) {}
+})();
 
 document.querySelectorAll(".auth-form").forEach((form) =>
   form.addEventListener("submit", async (e) => {
@@ -487,22 +454,30 @@ document.querySelectorAll(".auth-form").forEach((form) =>
       if (!result.ok) throw new Error(result.message || "요청을 처리하지 못했습니다.");
 
       if (action === "login") {
-        const storage = formData.get("remember") ? "local" : "session";
+        const remember = formData.get("remember");
+        const email = formData.get("email");
+        if (remember && email) {
+          localStorage.setItem("blog_remember_email", email);
+        } else {
+          localStorage.removeItem("blog_remember_email");
+        }
+
+        const storage = remember ? "local" : "session";
         const target = storage === "local" ? localStorage : sessionStorage;
         const other = storage === "local" ? sessionStorage : localStorage;
         other.removeItem("blogAuthToken");
         other.removeItem("blogAuthUser");
         target.setItem("blogAuthToken", result.data.token);
         target.setItem("blogAuthUser", JSON.stringify(result.data.user));
-        showAuthMessage(form, "로그인되었습니다. 프로필로 이동합니다.");
-        setTimeout(() => (location.href = "profile.html"), 700);
+        showAuthMessage(form, "로그인 성공! 프로필로 즉시 이동합니다.");
+        location.href = "profile.html";
       } else {
         form.reset();
         showAuthMessage(
           form,
-          "회원가입이 완료되었습니다. 로그인 페이지로 이동합니다."
+          "회원가입 완료! 로그인 페이지로 이동합니다."
         );
-        setTimeout(() => (location.href = "login.html"), 900);
+        setTimeout(() => (location.href = "login.html"), 350);
       }
     } catch (error) {
       showAuthMessage(
@@ -800,36 +775,77 @@ if (editor) {
     if (body) body.value = editingPost.body || "";
   } else {
     // === 새 글 작성 모드 (Create Mode) ===
+    let autoSaveTimer = null;
+
     try {
       const draft = JSON.parse(localStorage.getItem(draftKey));
-      if (draft) {
-        if (title) title.value = draft.title || "";
-        if (summary) summary.value = draft.summary || "";
-        if (body) body.value = draft.body || "";
-        if (category) category.value = draft.category || "개발";
-        if (status) status.textContent = "임시저장본 불러옴";
+      if (draft && (draft.title || draft.body || draft.summary)) {
+        if (title && draft.title) title.value = draft.title;
+        if (summary && draft.summary) summary.value = draft.summary;
+        if (body && draft.body) body.value = draft.body;
+        if (category && draft.category) category.value = draft.category;
+        if (status) {
+          status.textContent = "임시저장본 불러옴";
+          status.className = "draft-status saved";
+        }
       }
     } catch (e) {}
 
-    const saveDraft = () => {
-      localStorage.setItem(
-        draftKey,
-        JSON.stringify({
-          title: title?.value || "",
-          summary: summary?.value || "",
-          body: body?.value || "",
-          category: category?.value || "개발",
-        })
-      );
+    const saveDraft = (isManual = false) => {
+      if (editingPost) return;
+      const data = {
+        title: title?.value || "",
+        summary: summary?.value || "",
+        body: body?.value || "",
+        category: category?.value || "개발",
+        savedAt: Date.now(),
+      };
+      localStorage.setItem(draftKey, JSON.stringify(data));
       if (status) {
-        status.textContent = `${new Date().toLocaleTimeString("ko-KR", {
+        const timeStr = new Date().toLocaleTimeString("ko-KR", {
           hour: "2-digit",
           minute: "2-digit",
-        })} 임시저장됨`;
+          second: "2-digit",
+        });
+        status.textContent = isManual
+          ? `수동 임시저장됨 (${timeStr})`
+          : `실시간 자동저장됨 (${timeStr})`;
+        status.className = "draft-status saved";
       }
     };
 
-    saveBtn?.addEventListener("click", saveDraft);
+    const triggerAutoSave = () => {
+      if (editingPost) return;
+      if (status) {
+        status.textContent = "임시저장 중...";
+        status.className = "draft-status saving";
+      }
+      clearTimeout(autoSaveTimer);
+      autoSaveTimer = setTimeout(() => saveDraft(false), 400);
+    };
+
+    title?.addEventListener("input", triggerAutoSave);
+    summary?.addEventListener("input", triggerAutoSave);
+    body?.addEventListener("input", triggerAutoSave);
+    category?.addEventListener("change", triggerAutoSave);
+
+    saveBtn?.addEventListener("click", () => saveDraft(true));
+
+    const resetBtn = document.querySelector("#editor-reset-btn");
+    if (resetBtn) {
+      resetBtn.addEventListener("click", () => {
+        if (confirm("임시저장된 내용을 모두 비우고 처음부터 새로 작성하시겠습니까?")) {
+          localStorage.removeItem(draftKey);
+          if (title) title.value = "";
+          if (summary) summary.value = "";
+          if (body) body.value = "";
+          if (status) {
+            status.textContent = "새 글";
+            status.className = "draft-status";
+          }
+        }
+      });
+    }
   }
 
   // 서식 도구 툴바

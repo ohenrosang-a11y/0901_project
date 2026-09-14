@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>새 글 쓰기 — 기록의 온도</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -20,6 +23,7 @@
       <p class="draft-status" role="status">새 글</p>
       <div class="editor-actions">
         <a href="index.html" class="button secondary text-button">나가기</a>
+        <button class="button secondary text-button" type="button" id="editor-reset-btn" title="임시저장 비우기">새로 쓰기</button>
         <button class="button secondary" type="button" data-save id="editor-save-btn">임시저장</button>
         <button class="button primary" type="submit" form="editor-form" id="editor-submit-btn">발행하기</button>
       </div>

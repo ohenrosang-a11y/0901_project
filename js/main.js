@@ -302,7 +302,7 @@ function renderPostDetailPage() {
       ${contentHtml}
       <div class="tag-list"><span>#${escapeHtml(post.category || "기록")}</span><span>#기록</span></div>
       <div class="article-author">
-        <img src="assets/images/images.jfif" alt="${escapeHtml(authorName)}">
+        <img src="assets/images/boksem.jpg" alt="${escapeHtml(authorName)}">
         <div>
           <strong>${escapeHtml(authorName)}</strong>
           <p>${post.authorNickname ? "@" + escapeHtml(post.authorNickname) + " · " : ""}배움과 생각을 솔직하게 기록합니다.</p>
